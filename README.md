@@ -1,6 +1,6 @@
 # docker-dev-tools image
 
-A docker image with all necessary tools for infrastructure development
+A docker image with all necessary tools for infrastructure development.
 
 
 # Usage
@@ -17,8 +17,12 @@ A docker image with all necessary tools for infrastructure development
 
 `source aliases.sh`
 
+The following command will create a couple of new commands in your shell
+
+Command list: check functions in aliases.sh
+
 ### Usage
 
 `cd your_dir`
 
-`make | terraform | packer`
+`vte-make | vte-terraform | vte-packer`
