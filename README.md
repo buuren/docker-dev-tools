@@ -2,7 +2,6 @@
 
 A docker image with all necessary tools for infrastructure development.
 
-
 # Usage
 
 ### Configure
