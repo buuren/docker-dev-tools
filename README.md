@@ -7,22 +7,22 @@ A docker image with all necessary tools for infrastructure development.
 
 ### Configure
 
+Modify image name if necessary:
+
 `vim image-config.sh`
 
 ### Build
+
+Build image:
 
 `./build.sh`
 
 ### Load aliases
 
-`source aliases.sh`
+`source source.sh`
 
-The following command will create a couple of new commands in your shell
+This will add new commands to your shell.
 
-Command list: check functions in aliases.sh
+For help run:
 
-### Usage
-
-`cd your_dir`
-
-`vte-make | vte-terraform | vte-packer`
+`vte-help`

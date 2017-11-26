@@ -4,7 +4,7 @@ IMAGE_NAME=""
 DOCKER_BIN="sudo docker"
 source "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"/image-config.sh
 
-function vte-bash()
+function vte-bash() # test
 {
     echo "Running vte-bash command with args: $@"
 	${DOCKER_BIN} run --net=host -it --rm --entrypoint /bin/bash "${IMAGE_NAME}" -c "bash"
@@ -38,4 +38,10 @@ function vte-aws()
 {
     echo "Running vte-aws command with args: $@"
 	${DOCKER_BIN} run --net=host -it --rm --entrypoint /bin/bash "${IMAGE_NAME}" -c "aws $@"
+}
+
+function vte-help()
+{
+    echo "List of available vte commands:"
+	typeset -f | grep "vte-" | awk '/\(\)/ {print $1}'
 }
