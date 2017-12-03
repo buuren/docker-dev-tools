@@ -7,7 +7,7 @@ source "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"/image-config.sh
 function vte-bash() # test
 {
     echo "Running vte-bash command with args: $@"
-	${DOCKER_BIN} run --net=host -it --rm --entrypoint /bin/bash "${IMAGE_NAME}" -c "bash"
+	${DOCKER_BIN} run --net=host --privileged -it -v $(pwd):$(pwd) --rm --entrypoint /bin/bash "${IMAGE_NAME}" -c "cd $(pwd); bash"
 }
 
 function vte-make()
@@ -19,7 +19,7 @@ function vte-make()
 function vte-packer()
 {
     echo "Running vte-packer command with args: $@"
-	${DOCKER_BIN} run --net=host --privileged -it -v $(pwd):$(pwd) --rm --entrypoint /bin/bash "${IMAGE_NAME}" -c "cd $(pwd); /opt/packer/packer $@"
+	${DOCKER_BIN} run --net=host --privileged -it -v $(pwd):$(pwd) --rm --entrypoint /bin/bash "${IMAGE_NAME}" -c "cd $(pwd); /opt/packer/packer $*"
 }
 
 function vte-terraform()
@@ -43,5 +43,5 @@ function vte-aws()
 function vte-help()
 {
     echo "List of available vte commands:"
-	typeset -f | grep "vte-" | awk '/\(\)/ {print $1}'
+    typeset -f | grep "vte-" | awk '/\(\)/ {print $1}'
 }

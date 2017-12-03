@@ -9,7 +9,8 @@ ARG AWSCLI_VERSION="1.12.0"
 RUN yum -y install unzip \
 	make \
 	qemu-kvm \
-	qemu-kvm-tools
+	qemu-kvm-tools \
+	ansible
 
 RUN curl -L -o /usr/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64
 RUN chmod +x /usr/bin/jq
