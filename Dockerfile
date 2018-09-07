@@ -13,10 +13,25 @@ ENV VAGRANT_BIN='/opt/vagrant/bin/vagrant'
 ENV TERRAFORM_BIN='/opt/terraform/terraform'
 ENV PACKER_BIN='/opt/packer/packer'
 ENV AWS_CLI_BIN='/usr/bin/aws'
+ENV PIP_CMD_ARGS='--trusted-host pypi.org --trusted-host files.pythonhosted.org'
+ENV LANG=en_US.utf8
+
+ENV HOME_DIR='/home/cloud'
+ENV SYS_USER='cloud'
+
+ENV http_proxy http://172.17.0.1:3128
+ENV https_proxy http://172.17.0.1:3128
+
+COPY data/crt /etc/pki/ca-trust/source/anchors
+RUN update-ca-trust
 
 RUN yum -y install unzip \
-	make \
+	gcc-c++ \
 	qemu-kvm \
+	patch \
+	readline \
+	readline-devel \
+	zlib zlib-devel \
 	qemu-kvm-tools \
 	qemu-utils \
 	ansible \
@@ -24,7 +39,21 @@ RUN yum -y install unzip \
 	libvirt \
 	libvirt-devel \
 	ruby-devel \
-	openssh-clients
+	openssh-clients \
+	libyaml-devel \
+	libffi-devel \
+	openssl-devel \
+	make \
+	bzip2 \
+	autoconf \
+	automake \
+	libtool \
+	bison \
+	iconv-devel \
+	sqlite-devel \
+	which \
+	git \
+	sudo
 
 RUN curl -L -o /usr/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64
 RUN chmod +x /usr/bin/jq
@@ -42,11 +71,11 @@ RUN rpm -i https://releases.hashicorp.com/vagrant/${VAGRANT}/vagrant_${VAGRANT}_
 
 # PIP
 RUN curl -L -o /tmp/get-pip.py https://bootstrap.pypa.io/get-pip.py
-RUN python /tmp/get-pip.py
+RUN python /tmp/get-pip.py ${PIP_CMD_ARGS}
 RUN rm -f /tmp/get-pip.py
 
 # AWSCLI
-RUN pip install "awscli==${AWSCLI}"
+RUN pip install "awscli==${AWSCLI}" ${PIP_CMD_ARGS}
 
 # CLEANUP
 RUN rm -f /tmp/packer.zip /tmp/terraform.zip
@@ -56,24 +85,46 @@ RUN curl -L -o go.tar.gz https://storage.googleapis.com/golang/go${GO}.linux-amd
     && tar xzvf go.tar.gz -C /usr/local >/dev/null \
     && rm -f go.tar.gz
 
-RUN gem install serverspec -v ${SERVERSPEC}
-RUN gem install rake
+# Ruby stuff
+RUN curl -sSL https://rvm.io/mpapis.asc | gpg --import - \
+	&& curl -L get.rvm.io | bash -s stable
+
+RUN /bin/bash -c "source /etc/profile.d/rvm.sh \
+	&& rvm reload \
+	&& rvm requirements run \
+	&& rvm install 2.5 \
+	&& rvm use 2.5 \
+	&& gem install serverspec -v ${SERVERSPEC} \
+	&& gem install rake"
 
 # Install kubeadm / kutectl
-
 COPY kubernetes.repo /etc/yum.repos.d/kubernetes.repo
-RUN yum update -y
 RUN yum install -y kubelet kubeadm kubectl docker
+
 #RUN systemctl enable kubelet && systemctl start kubelet
 
 # add this to bottom
 ENV PATH=$PATH:/usr/local/go/bin
-ENV GOPATH=/usr/local/go/dev
-ENV PATH=$PATH:$GOPATH/bin
+ENV GOPATH=${HOME_DIR}/go/dev
+ENV PATH=$PATH:$GOPATH/bin:$GOPATH/dev/bin
 
-#COPY resources/ansible.cfg /etc/ansible/ansible.cfg
-#RUN cd /root/metadata-server \
-#    && go build
+RUN groupadd -g 20229 docker
+RUN useradd -d ${HOME_DIR} -G docker -ms /usr/bin/bash ${SYS_USER}
 
+# Additional packages for AWS ECR setup
+RUN cd ${HOME_DIR} && \
+	go get -u github.com/awslabs/amazon-ecr-credential-helper/ecr-login/cli/docker-credential-ecr-login && \
+	chown ${SYS_USER}:${SYS_USER} ${HOME_DIR} -R
+
+ENV http_proxy ""
+ENV https_proxy ""
+
+RUN echo 'cloud ALL=(ALL) NOPASSWD: /usr/bin/dockerd' > /etc/sudoers
+
+
+USER ${SYS_USER}
+ENV https_proxy ""
+
+COPY .bashrc ${HOME_DIR}
 
 ENTRYPOINT ["echo", "Image has no entrypoint. Specify --entrypoint argument. Example: docker run -it --rm --entrypoint ls"]
