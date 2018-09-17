@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-REGISTRY := registry..net
+REGISTRY := docker.io
 NAME := cloud-dev-tools
 TAG := latest
 
@@ -14,8 +14,9 @@ run: ## Start container
 		--hostname=${NAME} \
 		--entrypoint /usr/bin/bash \
 		--net=host \
+		--privileged \
 		-it \
-		-e USER=cloud \
+		-e USER=root \
 		-e HTTP_PROXY=${PROXY} \
 		-e HTTPS_PROXY=${PROXY} \
 		-e NOPROXY=${NOPROXY} \
@@ -34,6 +35,8 @@ build: ## Build image
 		--build-arg TERRAFORM=0.11.7 \
 		--build-arg VAGRANT=2.1.2 \
 		--build-arg AWSCLI=1.15.73 \
+		--build-arg AWS_ECS_CLI=1.8.0 \
+		--build-arg AWS_EB_CLI=3.14.5 \
 		--build-arg GO=1.10 \
 		--build-arg SERVERSPEC=2.41.3 \
 		.
