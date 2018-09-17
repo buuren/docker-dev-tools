@@ -21,12 +21,6 @@ ENV LANG=en_US.utf8
 ENV HOME_DIR='/home/cloud'
 ENV SYS_USER='cloud'
 
-ENV http_proxy http://172.17.0.1:3128
-ENV https_proxy http://172.17.0.1:3128
-
-COPY data/crt /etc/pki/ca-trust/source/anchors
-RUN update-ca-trust
-
 RUN yum -y install unzip \
 	gcc-c++ \
 	qemu-kvm \
@@ -122,9 +116,6 @@ RUN useradd -d ${HOME_DIR} -G docker -ms /usr/bin/bash ${SYS_USER}
 RUN cd ${HOME_DIR} && \
 	go get -u github.com/awslabs/amazon-ecr-credential-helper/ecr-login/cli/docker-credential-ecr-login && \
 	chown ${SYS_USER}:${SYS_USER} ${HOME_DIR} -R
-
-ENV http_proxy ""
-ENV https_proxy ""
 
 RUN echo 'cloud ALL=(ALL) NOPASSWD: /usr/bin/dockerd' > /etc/sudoers
 RUN mkdir -p /opt/infra \
