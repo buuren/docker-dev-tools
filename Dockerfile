@@ -4,9 +4,11 @@ FROM centos:latest
 ARG PACKER
 ARG TERRAFORM
 ARG VAGRANT
-ARG AWSCLI
 ARG GO
 ARG SERVERSPEC
+ARG AWSCLI
+ARG AWS_ECS_CLI
+ARG AWS_EB_CLI
 
 ENV ANSIBLE_BIN='/usr/bin/ansible'
 ENV VAGRANT_BIN='/opt/vagrant/bin/vagrant'
@@ -55,30 +57,35 @@ RUN yum -y install unzip \
 	git \
 	sudo
 
-RUN curl -L -o /usr/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64
-RUN chmod +x /usr/bin/jq
+# JQ
+RUN curl -L -o /usr/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64 \
+	&& chmod +x /usr/bin/jq
+
+# AWS_ECS_CLI
+RUN curl -L -o /usr/local/bin/ecs-cli https://s3.amazonaws.com/amazon-ecs-cli/ecs-cli-linux-amd64-v${AWS_ECS_CLI} \
+	&& chmod +x /usr/local/bin/ecs-cli
 
 # PACKER
-RUN curl -L -o /tmp/packer.zip https://releases.hashicorp.com/packer/${PACKER}/packer_${PACKER}_linux_amd64.zip
-RUN unzip /tmp/packer.zip -d /opt/packer/
+RUN curl -L -o /tmp/packer.zip https://releases.hashicorp.com/packer/${PACKER}/packer_${PACKER}_linux_amd64.zip \
+	&& unzip /tmp/packer.zip -d /opt/packer/ \
+	&& rm -f /tmp/packer.zip
 
 # TERRAFORM
-RUN curl -L -o /tmp/terraform.zip https://releases.hashicorp.com/terraform/${TERRAFORM}/terraform_${TERRAFORM}_linux_amd64.zip
-RUN unzip /tmp/terraform.zip -d /opt/terraform/
+RUN curl -L -o /tmp/terraform.zip https://releases.hashicorp.com/terraform/${TERRAFORM}/terraform_${TERRAFORM}_linux_amd64.zip \
+	&& unzip /tmp/terraform.zip -d /opt/terraform \
+	&& rm -f /tmp/terraform.zip
 
 # VAGRANT
 RUN rpm -i https://releases.hashicorp.com/vagrant/${VAGRANT}/vagrant_${VAGRANT}_x86_64.rpm
 
 # PIP
-RUN curl -L -o /tmp/get-pip.py https://bootstrap.pypa.io/get-pip.py
-RUN python /tmp/get-pip.py ${PIP_CMD_ARGS}
-RUN rm -f /tmp/get-pip.py
+RUN curl -L -o /tmp/get-pip.py https://bootstrap.pypa.io/get-pip.py \
+	&& python /tmp/get-pip.py ${PIP_CMD_ARGS} \
+	&& rm -f /tmp/get-pip.py
 
 # AWSCLI
 RUN pip install "awscli==${AWSCLI}" ${PIP_CMD_ARGS}
-
-# CLEANUP
-RUN rm -f /tmp/packer.zip /tmp/terraform.zip
+RUN pip install "awsebcli==${AWS_EB_CLI}" ${PIP_CMD_ARGS}
 
 # Install GO
 RUN curl -L -o go.tar.gz https://storage.googleapis.com/golang/go${GO}.linux-amd64.tar.gz \
@@ -120,10 +127,12 @@ ENV http_proxy ""
 ENV https_proxy ""
 
 RUN echo 'cloud ALL=(ALL) NOPASSWD: /usr/bin/dockerd' > /etc/sudoers
+RUN mkdir -p /opt/infra \
+	&& chown cloud:cloud /opt/infra -R
 
+RUN modprobe kvm_intel
 
 USER ${SYS_USER}
-ENV https_proxy ""
 
 COPY .bashrc ${HOME_DIR}
 
